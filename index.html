@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #07080f;
+  --bg2:     #0c0e1a;
+  --bg3:     #11142a;
+  --border:  #1c2040;
+  --gold:    #f0c040;
+  --cyan:    #00e5ff;
+  --text:    #ccd0f0;
+  --dim:     #50608a;
+  --green-dark:  #062a10; --green-mid:#0d5c22; --green-txt:#4ade80;
+  --yellow-dark: #2a1a00; --yellow-mid:#7a4a00;--yellow-txt:#fcd34d;
+  --red-dark:    #2a0505; --red-mid:  #6b1010; --red-txt:  #fca5a5;
+  --weekly-bg:   #160a30; --weekly-b: #7040c0; --weekly-txt:#c084fc;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;}
+
+/* ── HEADER ── */
+.hdr{
+  background:#050610;border-bottom:1px solid var(--border);
+  padding:10px 20px;display:flex;align-items:center;gap:14px;
+  position:sticky;top:0;z-index:200;
+}
+.logo{font-family:'Share Tech Mono',monospace;font-size:17px;color:var(--cyan);letter-spacing:3px;text-shadow:0 0 16px rgba(0,229,255,.35);}
+.logo b{color:var(--gold);}
+.tag{font-size:9px;color:var(--dim);letter-spacing:2px;margin-top:2px;}
+.hdr-r{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.ts{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);}
+.pill{font-family:'Share Tech Mono',monospace;font-size:10px;padding:3px 10px;border-radius:20px;letter-spacing:1px;display:flex;align-items:center;gap:5px;}
+.pill-live{background:#062a10;border:1px solid #0d6b22;color:#4ade80;}
+.pill-closed{background:#1a1000;border:1px solid #6b4000;color:#fcd34d;}
+.pill-load{background:#0a0a20;border:1px solid #2040a0;color:#818cf8;}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+.dot-live{animation:blink 1.2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* ── NAV TABS ── */
+.nav{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:0 20px;display:flex;align-items:center;gap:0;
+}
+.nav-tab{
+  padding:10px 22px;font-size:13px;font-weight:600;letter-spacing:1px;
+  cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;
+  transition:color .15s,border-color .15s;
+  display:flex;align-items:center;gap:7px;
+}
+.nav-tab:hover{color:var(--text);}
+.nav-tab.active{color:var(--cyan);border-bottom:2px solid var(--cyan);}
+.nav-tab .icon{font-size:14px;}
+
+/* ── URL BAR ── */
+.urlbar{
+  background:#0a0a20;border-bottom:1px solid #2040a0;
+  padding:6px 20px;display:flex;align-items:center;gap:10px;font-size:11px;color:var(--dim);
+}
+.urlbar input{
+  background:#111130;border:1px solid #304080;color:var(--text);
+  padding:4px 10px;border-radius:4px;
+  font-family:'Share Tech Mono',monospace;font-size:11px;width:320px;outline:none;
+}
+.urlbar input:focus{border-color:var(--cyan);}
+.urlbar button{
+  background:#1040a0;border:none;color:#fff;padding:4px 14px;border-radius:4px;
+  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:1px;
+}
+.urlbar button:hover{background:#1a60d0;}
+#connStatus{font-family:'Share Tech Mono',monospace;font-size:10px;color:#4ade80;}
+
+/* ── PAGE CONTAINERS ── */
+.page{display:none;padding:16px 12px 60px;}
+.page.active{display:block;}
+
+/* ── STATUS / LOADING ── */
+.status-msg{text-align:center;padding:60px;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--dim);letter-spacing:2px;}
+
+/* ── BREADTH TABLE ── */
+.wrap{overflow-x:auto;}
+table.btbl{border-collapse:collapse;min-width:900px;}
+.rl{
+  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;
+  color:var(--text);text-align:left;padding:7px 14px;
+  border-right:2px solid var(--border);border-bottom:1px solid rgba(28,32,64,.5);
+  white-space:nowrap;position:sticky;left:0;z-index:5;background:var(--bg2);
+  letter-spacing:.5px;min-width:150px;
+}
+.rl sub{display:block;font-size:9px;color:var(--dim);font-weight:400;letter-spacing:1px;margin-top:1px;}
+thead th{
+  background:var(--bg2);padding:8px 10px;font-size:11px;font-weight:600;
+  letter-spacing:.5px;color:var(--dim);border-bottom:2px solid var(--border);
+  border-right:1px solid var(--border);white-space:nowrap;text-align:center;min-width:90px;
+}
+thead th.th-lbl{text-align:left;min-width:150px;color:var(--text);font-size:12px;position:sticky;left:0;z-index:10;background:var(--bg2);}
+thead th.th-today{color:var(--gold);border-bottom:2px solid var(--gold);background:#120f00;font-family:'Share Tech Mono',monospace;}
+thead th.th-weekly{color:var(--weekly-txt);background:var(--weekly-bg);border-bottom:2px solid var(--weekly-b);font-size:10px;}
+td.cell{
+  padding:6px 10px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:12px;
+  border-bottom:1px solid rgba(28,32,64,.4);border-right:1px solid rgba(28,32,64,.4);
+  transition:filter .15s;white-space:nowrap;
+}
+tr:hover td{filter:brightness(1.18);}
+td.green{background:var(--green-dark);color:var(--green-txt);}
+td.yellow{background:var(--yellow-dark);color:var(--yellow-txt);}
+td.red{background:var(--red-dark);color:var(--red-txt);}
+td.neutral{background:transparent;color:var(--dim);}
+td.today-cell{background:#120f00;border-right:2px solid #3a3000;}
+td.today-cell.green{background:#0a2808;}
+td.today-cell.yellow{background:#1a1400;}
+td.today-cell.red{background:#1a0808;}
+td.weekly-cell{background:var(--weekly-bg)!important;color:var(--weekly-txt)!important;}
+tr.sep td{background:var(--bg3)!important;height:5px;padding:0;border-top:1px solid var(--border);}
+@keyframes flash{0%{filter:brightness(2.2)}100%{filter:brightness(1)}}
+.flash{animation:flash .4s ease-out;}
+
+/* ── LEGEND ── */
+.legend{display:flex;gap:18px;padding:6px 0 10px;flex-wrap:wrap;align-items:center;}
+.li{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--dim);}
+.sw{width:10px;height:10px;border-radius:2px;}
+
+/* ── THEME TABLE ── */
+.theme-controls{display:flex;align-items:center;gap:12px;padding:12px 0;flex-wrap:wrap;}
+.period-btn{
+  padding:4px 14px;border-radius:4px;font-size:12px;font-weight:600;
+  cursor:pointer;letter-spacing:1px;border:1px solid var(--border);
+  background:transparent;color:var(--dim);transition:all .15s;
+}
+.period-btn:hover{color:var(--text);border-color:var(--text);}
+.period-btn.active{background:#1040a0;border-color:#2060d0;color:#fff;}
+.theme-search{
+  background:#111130;border:1px solid var(--border);color:var(--text);
+  padding:4px 12px;border-radius:4px;font-family:'Rajdhani',sans-serif;
+  font-size:12px;outline:none;width:200px;margin-left:auto;
+}
+.theme-search:focus{border-color:var(--cyan);}
+.theme-count{font-size:11px;color:var(--dim);font-family:'Share Tech Mono',monospace;}
+
+table.ttbl{border-collapse:collapse;width:100%;}
+table.ttbl thead th{
+  background:var(--bg2);padding:8px 14px;font-size:11px;font-weight:600;
+  color:var(--dim);border-bottom:2px solid var(--border);
+  border-right:1px solid var(--border);white-space:nowrap;
+  text-align:right;letter-spacing:.5px;
+}
+table.ttbl thead th:first-child{text-align:left;min-width:200px;position:sticky;left:0;background:var(--bg2);z-index:5;}
+table.ttbl thead th.sort-active{color:var(--gold);}
+table.ttbl tbody tr{cursor:pointer;transition:background .1s;}
+table.ttbl tbody tr:hover td{background:var(--bg3)!important;}
+table.ttbl td{
+  padding:7px 14px;font-size:12px;text-align:right;
+  border-bottom:1px solid rgba(28,32,64,.5);
+  border-right:1px solid rgba(28,32,64,.3);
+  font-family:'Share Tech Mono',monospace;
+}
+table.ttbl td:first-child{
+  text-align:left;font-family:'Rajdhani',sans-serif;font-weight:600;
+  font-size:13px;color:var(--text);
+  position:sticky;left:0;background:var(--bg2);z-index:3;
+}
+table.ttbl td.pos{color:var(--green-txt);}
+table.ttbl td.neg{color:var(--red-txt);}
+table.ttbl td.flat{color:var(--dim);}
+.cnt-badge{
+  font-family:'Share Tech Mono',monospace;font-size:9px;
+  color:var(--dim);margin-left:6px;
+}
+
+/* ── DRILL-DOWN MODAL ── */
+.modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:1000;align-items:flex-start;justify-content:center;
+  padding:40px 20px;overflow-y:auto;
+}
+.modal-bg.open{display:flex;}
+.modal{
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  width:100%;max-width:1000px;overflow:hidden;
+}
+.modal-hdr{
+  display:flex;align-items:center;padding:16px 20px;
+  border-bottom:1px solid var(--border);background:var(--bg3);
+}
+.modal-title{font-size:16px;font-weight:700;letter-spacing:1px;color:var(--gold);}
+.modal-sub{font-size:11px;color:var(--dim);margin-top:2px;}
+.modal-close{
+  margin-left:auto;background:none;border:1px solid var(--border);
+  color:var(--dim);width:28px;height:28px;border-radius:4px;
+  cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
+}
+.modal-close:hover{color:var(--text);border-color:var(--text);}
+.modal-body{overflow-x:auto;max-height:70vh;overflow-y:auto;}
+
+table.stbl{border-collapse:collapse;width:100%;}
+table.stbl thead th{
+  background:var(--bg3);padding:8px 12px;font-size:10px;font-weight:600;
+  color:var(--dim);border-bottom:2px solid var(--border);
+  text-align:right;letter-spacing:1px;white-space:nowrap;
+  position:sticky;top:0;z-index:2;
+}
+table.stbl thead th:first-child{text-align:left;min-width:180px;}
+table.stbl td{
+  padding:6px 12px;font-size:11px;text-align:right;
+  border-bottom:1px solid rgba(28,32,64,.4);
+  font-family:'Share Tech Mono',monospace;
+}
+table.stbl td:first-child{text-align:left;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;}
+table.stbl td.pos{color:var(--green-txt);}
+table.stbl td.neg{color:var(--red-txt);}
+table.stbl td.flat{color:var(--dim);}
+table.stbl td.ma-up{color:var(--green-txt);}
+table.stbl td.ma-dn{color:var(--red-txt);}
+table.stbl tbody tr:hover td{background:var(--bg3);}
+
+::-webkit-scrollbar{height:5px;width:5px;background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <div class="logo">MARKET<b>PULSE</b></div>
+    <div class="tag">NYSE + NASDAQ // MKTCAP &gt; $1B // REAL-TIME</div>
+  </div>
+  <div class="hdr-r">
+    <span class="ts" id="tsLabel">--:--:-- UTC</span>
+    <span class="pill pill-load" id="statusPill"><span class="dot"></span> CONNECTING</span>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav">
+  <div class="nav-tab active" onclick="switchTab('breadth')" id="tab-breadth">
+    <span class="icon">📊</span> BREADTH
+  </div>
+  <div class="nav-tab" onclick="switchTab('theme')" id="tab-theme">
+    <span class="icon">🏭</span> THEMES
+  </div>
+</div>
+
+<!-- URL BAR -->
+<div class="urlbar">
+  <span>Backend:</span>
+  <input id="backendUrl" placeholder="https://your-app.railway.app" />
+  <button onclick="connect()">Connect</button>
+  <span id="connStatus"></span>
+</div>
+
+<!-- ══════════ BREADTH PAGE ══════════ -->
+<div class="page active" id="page-breadth">
+  <div class="legend">
+    <div class="li"><div class="sw" style="background:var(--green-mid)"></div>Bullish</div>
+    <div class="li"><div class="sw" style="background:var(--yellow-mid)"></div>Neutral</div>
+    <div class="li"><div class="sw" style="background:var(--red-mid)"></div>Bearish</div>
+    <span style="margin-left:auto;font-size:10px;color:var(--weekly-txt)">◆ Weekly Avg</span>
+  </div>
+  <div class="status-msg" id="bStatus">Enter backend URL and click Connect.</div>
+  <div class="wrap">
+    <table class="btbl" id="bTbl" style="display:none">
+      <thead id="bHead"></thead>
+      <tbody id="bBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════ THEME PAGE ══════════ -->
+<div class="page" id="page-theme">
+  <div class="theme-controls">
+    <div style="display:flex;gap:6px;">
+      <button class="period-btn active" onclick="setPeriod('today')" id="pb-today">Today</button>
+      <button class="period-btn" onclick="setPeriod('1w')"   id="pb-1w">1W</button>
+      <button class="period-btn" onclick="setPeriod('1m')"   id="pb-1m">1M</button>
+      <button class="period-btn" onclick="setPeriod('3m')"   id="pb-3m">3M</button>
+      <button class="period-btn" onclick="setPeriod('ytd')"  id="pb-ytd">YTD</button>
+    </div>
+    <span class="theme-count" id="themeCount"></span>
+    <input class="theme-search" id="themeSearch" placeholder="Search industry..." oninput="renderThemes()">
+  </div>
+  <div class="status-msg" id="tStatus" style="display:none">Loading theme data...</div>
+  <div style="overflow-x:auto;">
+    <table class="ttbl" id="tTbl">
+      <thead>
+        <tr>
+          <th onclick="sortThemes('industry')" id="th-industry">Industry</th>
+          <th onclick="sortThemes('today')"    id="th-today" class="sort-active">Today ▼</th>
+          <th onclick="sortThemes('1w')"       id="th-1w">1W</th>
+          <th onclick="sortThemes('1m')"       id="th-1m">1M</th>
+          <th onclick="sortThemes('3m')"       id="th-3m">3M</th>
+          <th onclick="sortThemes('ytd')"      id="th-ytd">YTD</th>
+          <th>Stocks</th>
+        </tr>
+      </thead>
+      <tbody id="tBody2"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- DRILL-DOWN MODAL -->
+<div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title" id="modalTitle">Industry</div>
+        <div class="modal-sub" id="modalSub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <table class="stbl">
+        <thead>
+          <tr>
+            <th>Symbol / Name</th>
+            <th>Price</th>
+            <th>Today</th>
+            <th>1W</th>
+            <th>1M</th>
+            <th>3M</th>
+            <th>YTD</th>
+            <th>Mkt Cap</th>
+            <th>EMA20</th>
+            <th>EMA50</th>
+            <th>SMA200</th>
+          </tr>
+        </thead>
+        <tbody id="modalBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════ BREADTH LOGIC ══════════
+
+const METRICS = [
+  {key:"advancing",       label:"上涨个数",    sub:"Advancing"},
+  {key:"declining",       label:"下跌个数",    sub:"Declining"},
+  {key:"ad_ratio",        label:"A/D Ratio",  sub:"Advance / Decline"},
+  {key:"above_ema20",     label:"> EMA20",     sub:"Above EMA 20"},
+  {key:"above_ema50",     label:"> EMA50",     sub:"Above EMA 50"},
+  {key:"below_sma200",    label:"< SMA200",    sub:"Below SMA 200"},
+  {key:"new_highs",       label:"New High",    sub:"52-Week High"},
+  {key:"dist_lt_neg10",   label:"< -10%",      sub:"Daily Change Dist"},
+  {key:"dist_neg10_neg5", label:"-10 ~ -5%",   sub:"Daily Change Dist"},
+  {key:"dist_neg5_0",     label:"-5 ~ 0%",     sub:"Daily Change Dist"},
+  {key:"dist_0_5",        label:"0 ~ 5%",      sub:"Daily Change Dist"},
+  {key:"dist_5_10",       label:"5 ~ 10%",     sub:"Daily Change Dist"},
+  {key:"dist_gt_10",      label:"> 10%",       sub:"Daily Change Dist"},
+];
+const SEP_AFTER = new Set(["ad_ratio","new_highs"]);
+const T = {
+  advancing:      {g:2000,y:1200,inv:false},
+  declining:      {g:800, y:1800,inv:true},
+  ad_ratio:       {g:2.0, y:0.8, inv:false},
+  above_ema20:    {g:2000,y:1200,inv:false},
+  above_ema50:    {g:1900,y:1100,inv:false},
+  below_sma200:   {g:1000,y:1800,inv:true},
+  new_highs:      {g:150, y:50,  inv:false},
+  dist_lt_neg10:  {g:20,  y:80,  inv:true},
+  dist_neg10_neg5:{g:80,  y:250, inv:true},
+  dist_neg5_0:    {g:600, y:1200,inv:true},
+  dist_0_5:       {g:1500,y:800, inv:false},
+  dist_5_10:      {g:300, y:100, inv:false},
+  dist_gt_10:     {g:80,  y:30,  inv:false},
+};
+function bColor(key,v){
+  if(v==null)return"neutral";
+  const t=T[key];if(!t)return"neutral";
+  if(!t.inv){return v>=t.g?"green":v>=t.y?"yellow":"red";}
+  else{return v<=t.g?"green":v<=t.y?"yellow":"red";}
+}
+function bFmt(key,v){
+  if(v==null)return"—";
+  if(key==="ad_ratio")return(+v).toFixed(2);
+  return(+v).toLocaleString();
+}
+
+let prevVals={};
+
+function renderBreadth(data){
+  document.getElementById("bStatus").style.display="none";
+  document.getElementById("bTbl").style.display="";
+
+  const cols=[];
+  cols.push({id:"today",label:"⚡ TODAY",type:"today",data:data.metrics});
+  for(const row of(data.history||[])){
+    const m={};
+    METRICS.forEach(met=>m[met.key]=row[met.key]);
+    cols.push({id:row.date,label:row.date,type:row.type||"daily",data:m});
+  }
+
+  // Head
+  const thead=document.getElementById("bHead");
+  const tr=document.createElement("tr");
+  const th0=document.createElement("th");
+  th0.className="th-lbl";th0.textContent="METRIC";tr.appendChild(th0);
+  cols.forEach(col=>{
+    const th=document.createElement("th");
+    if(col.type==="today")th.className="th-today";
+    else if(col.type==="weekly")th.className="th-weekly";
+    th.textContent=col.label;tr.appendChild(th);
+  });
+  thead.replaceChildren(tr);
+
+  // Body
+  const tbody=document.getElementById("bBody");
+  const rows=[];
+  METRICS.forEach(met=>{
+    const tr=document.createElement("tr");
+    const rl=document.createElement("td");
+    rl.className="rl";
+    rl.innerHTML=`${met.label}<sub>${met.sub}</sub>`;
+    tr.appendChild(rl);
+    cols.forEach(col=>{
+      const val=col.data?.[met.key];
+      const clr=bColor(met.key,val);
+      const cid=`c_${col.id}_${met.key}`;
+      const td=document.createElement("td");
+      td.className="cell "+clr;
+      if(col.type==="today")td.classList.add("today-cell");
+      if(col.type==="weekly")td.classList.add("weekly-cell");
+      td.id=cid;td.textContent=bFmt(met.key,val);
+      if(col.type==="today"&&prevVals[cid]!==undefined&&prevVals[cid]!==val){
+        td.classList.add("flash");
+        setTimeout(()=>td?.classList.remove("flash"),400);
+      }
+      prevVals[cid]=val;
+      tr.appendChild(td);
+    });
+    rows.push(tr);
+    if(SEP_AFTER.has(met.key)){
+      const sep=document.createElement("tr");sep.className="sep";
+      const std=document.createElement("td");std.colSpan=cols.length+1;
+      sep.appendChild(std);rows.push(sep);
+    }
+  });
+  tbody.replaceChildren(...rows);
+}
+
+// ══════════ THEME LOGIC ══════════
+
+let themeData={};
+let themePeriod="today";
+let themeSort={key:"today",dir:-1};
+
+function setPeriod(p){
+  themePeriod=p;
+  document.querySelectorAll(".period-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("pb-"+p).classList.add("active");
+  renderThemes();
+}
+
+function sortThemes(key){
+  if(themeSort.key===key)themeSort.dir*=-1;
+  else{themeSort.key=key;themeSort.dir=-1;}
+  // Update header
+  ["industry","today","1w","1m","3m","ytd"].forEach(k=>{
+    const el=document.getElementById("th-"+k);
+    if(el)el.className=(k===key?"sort-active":"");
+    if(el&&k===key)el.textContent={industry:"Industry",today:"Today",
+      "1w":"1W","1m":"1M","3m":"3M",ytd:"YTD"}[k]+(themeSort.dir===-1?" ▼":" ▲");
+    else if(el)el.textContent={industry:"Industry",today:"Today",
+      "1w":"1W","1m":"1M","3m":"3M",ytd:"YTD"}[k];
+  });
+  renderThemes();
+}
+
+function pctClass(v){
+  if(v==null)return"flat";
+  return v>0?"pos":v<0?"neg":"flat";
+}
+function pctFmt(v){
+  if(v==null)return"—";
+  return(v>0?"+":"")+v.toFixed(2)+"%";
+}
+function capFmt(v){
+  if(!v)return"—";
+  if(v>=1e12)return"$"+(v/1e12).toFixed(1)+"T";
+  if(v>=1e9)return"$"+(v/1e9).toFixed(1)+"B";
+  return"$"+(v/1e6).toFixed(0)+"M";
+}
+
+function renderThemes(){
+  const search=(document.getElementById("themeSearch").value||"").toLowerCase();
+  let rows=Object.values(themeData);
+
+  if(search)rows=rows.filter(r=>r.industry.toLowerCase().includes(search));
+
+  rows.sort((a,b)=>{
+    const av=a[themeSort.key],bv=b[themeSort.key];
+    if(av==null&&bv==null)return 0;
+    if(av==null)return 1;if(bv==null)return -1;
+    if(typeof av==="string")return themeSort.dir*av.localeCompare(bv);
+    return themeSort.dir*(av-bv);
+  });
+
+  document.getElementById("themeCount").textContent=rows.length+" industries";
+
+  const tbody=document.getElementById("tBody2");
+  tbody.innerHTML="";
+  rows.forEach(row=>{
+    const tr=document.createElement("tr");
+    tr.onclick=()=>openModal(row.industry);
+    const periods=["today","1w","1m","3m","ytd"];
+    tr.innerHTML=`
+      <td>${row.industry}<span class="cnt-badge">${row.count} stocks</span></td>
+      ${periods.map(p=>`<td class="${pctClass(row[p])}">${pctFmt(row[p])}</td>`).join("")}
+      <td style="color:var(--dim);font-size:11px;">${row.count}</td>
+    `;
+    // Highlight active period cell
+    const cells=tr.querySelectorAll("td");
+    const pIdx=["today","1w","1m","3m","ytd"].indexOf(themePeriod);
+    if(pIdx>=0&&cells[pIdx+1])cells[pIdx+1].style.fontWeight="700";
+    tbody.appendChild(tr);
+  });
+}
+
+// ══════════ MODAL ══════════
+
+async function openModal(industry){
+  const base=document.getElementById("backendUrl").value.trim().replace(/\/$/,"");
+  document.getElementById("modalTitle").textContent=industry;
+  document.getElementById("modalSub").textContent="Loading...";
+  document.getElementById("modalBody").innerHTML=
+    `<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--dim)">Loading...</td></tr>`;
+  document.getElementById("modalBg").classList.add("open");
+
+  try{
+    const r=await fetch(`${base}/api/themes/${encodeURIComponent(industry)}`);
+    const data=await r.json();
+    document.getElementById("modalSub").textContent=
+      `${data.count} stocks · Today: ${pctFmt(data.today)} · 1M: ${pctFmt(data["1m"])}`;
+
+    const stocks=(data.stocks||[]).sort((a,b)=>(b.mktcap||0)-(a.mktcap||0));
+    const tbody=document.getElementById("modalBody");
+    tbody.innerHTML="";
+    stocks.forEach(s=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td><span style="color:var(--cyan);font-weight:700">${s.sym}</span>
+            <span style="color:var(--dim);font-size:10px;margin-left:6px">${(s.name||"").slice(0,25)}</span></td>
+        <td>$${(+s.close).toFixed(2)}</td>
+        <td class="${pctClass(s.today)}">${pctFmt(s.today)}</td>
+        <td class="${pctClass(s["1w"])}">${pctFmt(s["1w"])}</td>
+        <td class="${pctClass(s["1m"])}">${pctFmt(s["1m"])}</td>
+        <td class="${pctClass(s["3m"])}">${pctFmt(s["3m"])}</td>
+        <td class="${pctClass(s.ytd)}">${pctFmt(s.ytd)}</td>
+        <td style="color:var(--dim)">${capFmt(s.mktcap)}</td>
+        <td class="${s.ema20==="▲"?"ma-up":"ma-dn"}">${s.ema20||"—"}</td>
+        <td class="${s.ema50==="▲"?"ma-up":"ma-dn"}">${s.ema50||"—"}</td>
+        <td class="${s.sma200==="▲"?"ma-up":"ma-dn"}">${s.sma200||"—"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }catch(e){
+    document.getElementById("modalSub").textContent="Error loading data";
+  }
+}
+
+function closeModal(e){
+  if(e.target===document.getElementById("modalBg"))closeModalDirect();
+}
+function closeModalDirect(){
+  document.getElementById("modalBg").classList.remove("open");
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModalDirect();});
+
+// ══════════ CONNECTION ══════════
+
+let evtSource=null;
+
+function switchTab(tab){
+  document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById("tab-"+tab).classList.add("active");
+  document.getElementById("page-"+tab).classList.add("active");
+  if(tab==="theme")loadThemes();
+}
+
+async function loadThemes(){
+  const base=document.getElementById("backendUrl").value.trim().replace(/\/$/,"");
+  if(!base)return;
+  document.getElementById("tStatus").style.display="block";
+  document.getElementById("tStatus").textContent="Loading theme data...";
+  try{
+    const r=await fetch(`${base}/api/themes`);
+    const data=await r.json();
+    themeData=data.themes||{};
+    document.getElementById("tStatus").style.display="none";
+    renderThemes();
+  }catch(e){
+    document.getElementById("tStatus").textContent="Error loading themes. Is backend running?";
+  }
+}
+
+function setPill(type,label){
+  const el=document.getElementById("statusPill");
+  el.className="pill "+(type==="live"?"pill-live":type==="closed"?"pill-closed":"pill-load");
+  el.innerHTML=`<span class="dot ${type==="live"?"dot-live":""}"></span> ${label}`;
+}
+
+function connect(){
+  const base=document.getElementById("backendUrl").value.trim().replace(/\/$/,"");
+  if(!base)return;
+  localStorage.setItem("bb",base);
+  if(evtSource){evtSource.close();evtSource=null;}
+  setPill("load","CONNECTING");
+  document.getElementById("connStatus").textContent="";
+
+  evtSource=new EventSource(`${base}/api/stream`);
+  evtSource.onopen=()=>{
+    document.getElementById("connStatus").textContent="✓ "+base;
+  };
+  evtSource.onmessage=e=>{
+    try{
+      const d=JSON.parse(e.data);
+      if(d&&d.metrics){
+        setPill(d.market_open?"live":"closed",d.market_open?"LIVE":"MARKET CLOSED");
+        const ts=new Date(d.timestamp);
+        document.getElementById("tsLabel").textContent=ts.toISOString().slice(11,19)+" UTC";
+        renderBreadth(d);
+      }
+    }catch(_){}
+  };
+  evtSource.onerror=()=>{
+    setPill("closed","DISCONNECTED");
+    setTimeout(()=>restFallback(base),8000);
+  };
+}
+
+async function restFallback(base){
+  try{
+    const r=await fetch(`${base}/api/breadth`);
+    const d=await r.json();
+    if(d&&d.metrics){
+      setPill(d.market_open?"live":"closed",d.market_open?"LIVE":"MARKET CLOSED");
+      renderBreadth(d);
+    }
+  }catch(_){}
+}
+
+window.onload=()=>{
+  const saved=localStorage.getItem("bb");
+  if(saved){document.getElementById("backendUrl").value=saved;connect();}
+};
+</script>
+</body>
+</html>
